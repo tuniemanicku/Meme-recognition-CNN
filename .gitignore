@@ -3,3 +3,5 @@
 /test_memes
 /test
 **/*labels*.txt
+/__pycache/*
+*.pyc

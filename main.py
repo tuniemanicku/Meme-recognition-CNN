@@ -6,6 +6,7 @@ from torch.utils.data import DataLoader, TensorDataset
 import numpy as np
 from utils import *
 import time
+import collections
 
 def load_labels(test=False):
     labels = {}
@@ -39,7 +40,7 @@ class personDetector(nn.Module):
 
         self.fc1 = nn.Linear(16*5*5, 100)
         self.fc2 = nn.Linear(100, 64)
-        self.fc3 = nn.Linear(64, 3)
+        self.fc3 = nn.Linear(64, N_CLASSES)
 
         self.relu = torch.relu
     def forward(self, x):
@@ -65,22 +66,23 @@ def main():
             print(image)
     temp = np.array(initial_list)
     temp = np.transpose(temp, (0, 3, 1, 2))
-    image_data = torch.tensor(temp, dtype=torch.float)
+    image_data = torch.tensor(temp / 255.0, dtype=torch.float) # standardize data (0,1)
 
     #Device
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    if not torch.cuda.is_available():
+        print("Please use cuda for this")
 
     #data loader
     dataset = TensorDataset(image_data, torch.tensor([labels[key] for key in labels]))
-
+    print(collections.Counter([labels[key] for key in labels]))
     dataloader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True)
-    # for batch_images, batch_labels in dataloader:
-    #     print(f"Batch shape: {batch_images.shape}, Labels: {batch_labels}")
 
     #model
     model = personDetector().to(device=device)
+
     lossFunction = nn.CrossEntropyLoss()
-    optimizer = torch.optim.SGD(model.parameters(), lr=LEARNING_RATE)
+    optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
 
     #train
     training_start = time.time()
@@ -92,6 +94,7 @@ def main():
             labels = labels.to(device)
             outputs = model(images)
             loss = lossFunction(outputs, labels)
+            # print(loss.item())
 
             loss.backward()
             optimizer.step()
@@ -110,7 +113,7 @@ def main():
             print(image)
     temp = np.array(initial_list)
     temp = np.transpose(temp, (0, 3, 1, 2))
-    test_image_data = torch.tensor(temp, dtype=torch.float)
+    test_image_data = torch.tensor(temp / 255.0, dtype=torch.float)
     print(test_image_data.shape)
 
     #data loader
@@ -121,8 +124,8 @@ def main():
     with torch.no_grad():
         n_correct = 0
         n_samples = 0
-        n_class_correct = np.array([0 for i in range(3)])
-        n_class_samples = np.array([0 for i in range(3)])
+        n_class_correct = np.array([0 for i in range(N_CLASSES)])
+        n_class_samples = np.array([0 for i in range(N_CLASSES)])
 
         for images, labels in test_dataloader:
             images = images.to(device)
@@ -142,7 +145,7 @@ def main():
         acc = 100.0 * (n_correct / n_samples)
         print(f"acc is: {acc}")
 
-        for i in range(3):
+        for i in range(N_CLASSES):
             acc = 100.0 * (n_class_correct[i] / n_class_samples[i])
             print(f"class {i} acc is: {acc}")
 
