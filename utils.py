@@ -1,3 +1,6 @@
+TRAIN_PATH = "./memes"
+TEST_PATH = "./test_memes"
+
 BATCH_SIZE = 32
 LEARNING_RATE = 0.1
 N_EPOCHS = 100

@@ -2,7 +2,7 @@ from pinterest_dl import PinterestDL
 
 # Search for images
 images = PinterestDL.with_api().search_and_download(
-    query="funny memes",
-    output_dir="memes",
-    num=150
+    query="memes",
+    output_dir="test_memes",
+    num=30
 )
